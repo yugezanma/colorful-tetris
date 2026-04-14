@@ -202,6 +202,46 @@
       drawBoard(board);
       if (piece) drawPiece(piece);
     }
+
+    // ── ピース操作・衝突判定 ──────────────────────────────
+    function isValid(board, piece, dx, dy, drot) {
+      const rot   = (piece.rot + drot + 4) % 4;
+      const shape = PIECES[piece.type].shapes[rot];
+      const nx    = piece.x + dx;
+      const ny    = piece.y + dy;
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (!shape[r][c]) continue;
+          const cx = nx + c;
+          const cy = ny + r;
+          if (cx < 0 || cx >= COLS) return false;   // 左右壁
+          if (cy >= ROWS)           return false;   // 床
+          if (cy >= 0 && board[cy][cx]) return false; // 他ブロック
+        }
+      }
+      return true;
+    }
+
+    function spawnPiece() {
+      return {
+        type: Math.floor(Math.random() * PIECES.length),
+        rot:  0,
+        x:    3,   // ボード中央付近にスポーン
+        y:    0,
+      };
+    }
+
+    function lockPiece(board, piece) {
+      const shape  = PIECES[piece.type].shapes[piece.rot];
+      const colors = PIECES[piece.type].color;
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (shape[r][c]) {
+            board[piece.y + r][piece.x + c] = colors;
+          }
+        }
+      }
+    }
   </script>
 </body>
 </html>
