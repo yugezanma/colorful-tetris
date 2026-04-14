@@ -53,7 +53,24 @@
   <canvas id="board"></canvas>
   <div id="message">Press Enter to Start</div>
   <script>
-    // ここにゲームコードを追加
+    // ── 定数 ──────────────────────────────────────────────
+    const COLS = 10;
+    const ROWS = 20;
+    const CELL = 30;
+
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    canvas.width  = COLS * CELL;  // 300
+    canvas.height = ROWS * CELL;  // 600
+
+    // スコアテーブル（消したライン数 → 得点）
+    const LINE_SCORES = [0, 100, 300, 500, 800];
+
+    // ── ボード状態 ────────────────────────────────────────
+    // board[row][col] = 0（空）または グラデーション色文字列
+    function createBoard() {
+      return Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+    }
   </script>
 </body>
 </html>
