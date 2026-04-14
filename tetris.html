@@ -53,7 +53,195 @@
   <canvas id="board"></canvas>
   <div id="message">Press Enter to Start</div>
   <script>
-    // ここにゲームコードを追加
+    // ── 定数 ──────────────────────────────────────────────
+    const COLS = 10;
+    const ROWS = 20;
+    const CELL = 30;
+
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    canvas.width  = COLS * CELL;  // 300
+    canvas.height = ROWS * CELL;  // 600
+
+    // スコアテーブル（消したライン数 → 得点）
+    const LINE_SCORES = [0, 100, 300, 500, 800];
+
+    // ── ボード状態 ────────────────────────────────────────
+    // board[row][col] = 0（空）または グラデーション色文字列
+    function createBoard() {
+      return Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+    }
+
+    // ── テトリミノ定義 ─────────────────────────────────────
+    // 各ピースは4×4の行列で4回転分を持つ
+    // 1=ブロックあり, 0=空
+    const PIECES = [
+      // I ピース
+      {
+        color: ['#ff6b6b', '#ff8e53'],  // 赤 → オレンジ
+        shapes: [
+          [[0,0,0,0],[1,1,1,1],[0,0,0,0],[0,0,0,0]],
+          [[0,0,1,0],[0,0,1,0],[0,0,1,0],[0,0,1,0]],
+          [[0,0,0,0],[0,0,0,0],[1,1,1,1],[0,0,0,0]],
+          [[0,1,0,0],[0,1,0,0],[0,1,0,0],[0,1,0,0]],
+        ]
+      },
+      // O ピース
+      {
+        color: ['#ffd93d', '#6bcb77'],  // 黄 → 黄緑
+        shapes: [
+          [[0,1,1,0],[0,1,1,0],[0,0,0,0],[0,0,0,0]],
+          [[0,1,1,0],[0,1,1,0],[0,0,0,0],[0,0,0,0]],
+          [[0,1,1,0],[0,1,1,0],[0,0,0,0],[0,0,0,0]],
+          [[0,1,1,0],[0,1,1,0],[0,0,0,0],[0,0,0,0]],
+        ]
+      },
+      // T ピース
+      {
+        color: ['#6bcb77', '#4dddbf'],  // 緑 → シアン
+        shapes: [
+          [[0,1,0,0],[1,1,1,0],[0,0,0,0],[0,0,0,0]],
+          [[0,1,0,0],[0,1,1,0],[0,1,0,0],[0,0,0,0]],
+          [[0,0,0,0],[1,1,1,0],[0,1,0,0],[0,0,0,0]],
+          [[0,1,0,0],[1,1,0,0],[0,1,0,0],[0,0,0,0]],
+        ]
+      },
+      // S ピース
+      {
+        color: ['#4d96ff', '#74b9ff'],  // 水色 → 青
+        shapes: [
+          [[0,1,1,0],[1,1,0,0],[0,0,0,0],[0,0,0,0]],
+          [[0,1,0,0],[0,1,1,0],[0,0,1,0],[0,0,0,0]],
+          [[0,0,0,0],[0,1,1,0],[1,1,0,0],[0,0,0,0]],
+          [[1,0,0,0],[1,1,0,0],[0,1,0,0],[0,0,0,0]],
+        ]
+      },
+      // Z ピース
+      {
+        color: ['#7b2fff', '#c77dff'],  // 青紫 → 紫
+        shapes: [
+          [[1,1,0,0],[0,1,1,0],[0,0,0,0],[0,0,0,0]],
+          [[0,0,1,0],[0,1,1,0],[0,1,0,0],[0,0,0,0]],
+          [[0,0,0,0],[1,1,0,0],[0,1,1,0],[0,0,0,0]],
+          [[0,1,0,0],[1,1,0,0],[1,0,0,0],[0,0,0,0]],
+        ]
+      },
+      // J ピース
+      {
+        color: ['#c77dff', '#ff6fcf'],  // 紫 → ピンク
+        shapes: [
+          [[1,0,0,0],[1,1,1,0],[0,0,0,0],[0,0,0,0]],
+          [[0,1,1,0],[0,1,0,0],[0,1,0,0],[0,0,0,0]],
+          [[0,0,0,0],[1,1,1,0],[0,0,1,0],[0,0,0,0]],
+          [[0,1,0,0],[0,1,0,0],[1,1,0,0],[0,0,0,0]],
+        ]
+      },
+      // L ピース
+      {
+        color: ['#ff6fcf', '#ff6b6b'],  // ピンク → 赤
+        shapes: [
+          [[0,0,1,0],[1,1,1,0],[0,0,0,0],[0,0,0,0]],
+          [[0,1,0,0],[0,1,0,0],[0,1,1,0],[0,0,0,0]],
+          [[0,0,0,0],[1,1,1,0],[1,0,0,0],[0,0,0,0]],
+          [[1,1,0,0],[0,1,0,0],[0,1,0,0],[0,0,0,0]],
+        ]
+      },
+    ];
+
+    // ── 描画 ──────────────────────────────────────────────
+    function drawCell(x, y, colors) {
+      const grad = ctx.createLinearGradient(
+        x * CELL, y * CELL,
+        (x + 1) * CELL, (y + 1) * CELL
+      );
+      grad.addColorStop(0, colors[0]);
+      grad.addColorStop(1, colors[1]);
+      ctx.fillStyle = grad;
+      ctx.fillRect(x * CELL + 1, y * CELL + 1, CELL - 2, CELL - 2);
+      // ハイライト（上・左エッジ）
+      ctx.fillStyle = 'rgba(255,255,255,0.2)';
+      ctx.fillRect(x * CELL + 1, y * CELL + 1, CELL - 2, 3);
+      ctx.fillRect(x * CELL + 1, y * CELL + 1, 3, CELL - 2);
+    }
+
+    function drawGrid() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#1e1e2e';
+      ctx.lineWidth = 1;
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          ctx.strokeRect(c * CELL, r * CELL, CELL, CELL);
+        }
+      }
+    }
+
+    function drawBoard(board) {
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (board[r][c]) {
+            drawCell(c, r, board[r][c]);
+          }
+        }
+      }
+    }
+
+    function drawPiece(piece) {
+      const shape = PIECES[piece.type].shapes[piece.rot];
+      const colors = PIECES[piece.type].color;
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (shape[r][c]) {
+            drawCell(piece.x + c, piece.y + r, colors);
+          }
+        }
+      }
+    }
+
+    function render(board, piece) {
+      drawGrid();
+      drawBoard(board);
+      if (piece) drawPiece(piece);
+    }
+
+    // ── ピース操作・衝突判定 ──────────────────────────────
+    function isValid(board, piece, dx, dy, drot) {
+      const rot   = (piece.rot + drot + 4) % 4;
+      const shape = PIECES[piece.type].shapes[rot];
+      const nx    = piece.x + dx;
+      const ny    = piece.y + dy;
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (!shape[r][c]) continue;
+          const cx = nx + c;
+          const cy = ny + r;
+          if (cx < 0 || cx >= COLS) return false;   // 左右壁
+          if (cy >= ROWS)           return false;   // 床
+          if (cy >= 0 && board[cy][cx]) return false; // 他ブロック
+        }
+      }
+      return true;
+    }
+
+    function spawnPiece() {
+      return {
+        type: Math.floor(Math.random() * PIECES.length),
+        rot:  0,
+        x:    3,   // ボード中央付近にスポーン
+        y:    0,
+      };
+    }
+
+    function lockPiece(board, piece) {
+      const shape  = PIECES[piece.type].shapes[piece.rot];
+      const colors = PIECES[piece.type].color;
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (shape[r][c]) {
+            board[piece.y + r][piece.x + c] = colors;
+          }
+        }
+      }
+    }
   </script>
 </body>
 </html>
