@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Colorful Tetris</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #0a0a1a;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      font-family: 'Courier New', monospace;
+      color: #fff;
+    }
+    h1 {
+      font-size: 2rem;
+      letter-spacing: 0.3em;
+      margin-bottom: 12px;
+      background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #c77dff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    #score-display {
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+      color: #aaa;
+      letter-spacing: 0.1em;
+    }
+    #score-display span {
+      color: #ffd93d;
+      font-weight: bold;
+    }
+    canvas {
+      border: 2px solid #333;
+      background: #111;
+      display: block;
+    }
+    #message {
+      margin-top: 14px;
+      font-size: 0.9rem;
+      color: #666;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+  <h1>TETRIS</h1>
+  <div id="score-display">SCORE: <span id="score">0</span></div>
+  <canvas id="board"></canvas>
+  <div id="message">Press Enter to Start</div>
+  <script>
+    // ここにゲームコードを追加
+  </script>
+</body>
+</html>
